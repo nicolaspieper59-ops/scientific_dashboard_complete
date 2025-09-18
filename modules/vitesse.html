@@ -1,0 +1,119 @@
+<section id="vitessePanel" class="module">
+  <style>
+    #vitessePanel {
+      background: rgba(0,0,0,0.6);
+      border-radius: 12px;
+      padding: 1em;
+      margin: 1em;
+      box-shadow: 0 0 12px #0ff;
+      font-family: monospace;
+    }
+    .active { color: #0f0; }
+    .inactive { color: #f00; }
+    .flash { animation: flash 0.5s ease-in-out; }
+    @keyframes flash {
+      0% { background: #f00; }
+      100% { background: transparent; }
+    }
+  </style>
+
+  <h3>⚡ Carte Vitesse</h3>
+  <div>Vitesse brute : <span id="vBrute">0.0000</span> km/h</div>
+  <div>Vitesse corrigée : <span id="vCorrigee">0.0000</span> km/h</div>
+  <div>Distance corrigée : <span id="distanceCorr">0.0000</span> km</div>
+  <div>Temps corrigé : <span id="tempsCorr">0.00</span> s</div>
+  <div>Vitesse moyenne corrigée : <span id="vMoyCorr">0.0000</span> km/h</div>
+  <div>Vitesse max corrigée : <span id="vMaxCorr">0.0000</span> km/h</div>
+  <div>Précision GPS : <span id="gpsPrecision">100</span>%</div>
+  <button id="toggleMesure" class="inactive">🔘 Mesure arrêtée</button>
+  <button id="resetMax">🔴 Réinitialiser max</button>
+
+  <script>
+    let mesureActive = false;
+    let vitesseMax = 0;
+    let vitessePrecedente = 0;
+    let distanceTotale = 0;
+    let tempsTotal = 0;
+    let interval = 1; // secondes
+    let intervalMesure = null;
+
+    function format(val, digits = 4) {
+      return val.toFixed(digits);
+    }
+
+    function estimerPrecisionGPS(hdop = 0.9, satellites = 10, deltaV = 0.2) {
+      const hdopScore = hdop < 1 ? 100 : hdop < 2 ? 90 : hdop < 5 ? 70 : 50;
+      const satScore = Math.min(100, satellites * 10);
+      const stabilité = deltaV < 0.5 ? 100 : deltaV < 1 ? 80 : 60;
+      return Math.round((hdopScore + satScore + stabilité) / 3);
+    }
+
+    function corriger(valeurBrute, fiabilite) {
+      return fiabilite < 50 ? 0 : valeurBrute * (fiabilite / 100);
+    }
+
+    function vitesseMoyenneCorrigee(distanceCorr, tempsCorr) {
+      return tempsCorr > 0 ? distanceCorr / (tempsCorr / 3600) : 0;
+    }
+
+    function updateMesureButton() {
+      const btn = document.getElementById('toggleMesure');
+      btn.textContent = mesureActive ? '🟢 Mesure en cours' : '🔘 Mesure arrêtée';
+      btn.className = mesureActive ? 'active' : 'inactive';
+    }
+
+    function updateAffichage(vBrute, vCorr, dCorr, tCorr, vMoy, vMax, precision) {
+      document.getElementById('vBrute').textContent = format(vBrute);
+      document.getElementById('vCorrigee').textContent = format(vCorr);
+      document.getElementById('distanceCorr').textContent = format(dCorr);
+      document.getElementById('tempsCorr').textContent = format(tCorr, 2);
+      document.getElementById('vMoyCorr').textContent = format(vMoy);
+      document.getElementById('vMaxCorr').textContent = format(vMax);
+      document.getElementById('gpsPrecision').textContent = precision;
+    }
+
+    document.getElementById('toggleMesure').addEventListener('click', () => {
+      mesureActive = !mesureActive;
+      updateMesureButton();
+
+      if (mesureActive) {
+        intervalMesure = setInterval(() => {
+          const vBrute = Math.random() * 5;
+          const deltaV = Math.abs(vBrute - vitessePrecedente);
+          const precision = estimerPrecisionGPS(0.9, 10, deltaV);
+          const vCorr = corriger(vBrute, precision);
+          vitessePrecedente = vBrute;
+
+          distanceTotale += vCorr * (interval / 3600); // km/h → km
+          tempsTotal += interval;
+
+          const dCorr = corriger(distanceTotale, precision);
+          const tCorr = corriger(tempsTotal, precision);
+          const vMoy = vitesseMoyenneCorrigee(dCorr, tCorr);
+          const vMax = vCorr > vitesseMax ? vCorr : vitesseMax;
+          if (vCorr > vitesseMax) vitesseMax = vCorr;
+
+          updateAffichage(vBrute, vCorr, dCorr, tCorr, vMoy, vMax, precision);
+        }, interval * 1000);
+      } else {
+        clearInterval(intervalMesure);
+      }
+    });
+
+    document.getElementById('resetMax').addEventListener('click', () => {
+      vitesseMax = 0;
+      distanceTotale = 0;
+      tempsTotal = 0;
+      const btn = document.getElementById('resetMax');
+      btn.textContent = '🔴 Max réinitialisé';
+      btn.classList.add('flash');
+      setTimeout(() => {
+        btn.textContent = '🔴 Réinitialiser max';
+        btn.classList.remove('flash');
+      }, 1500);
+    });
+
+    updateMesureButton();
+    updateAffichage(0, 0, 0, 0, 0, 0, 100);
+  </script>
+</section>
