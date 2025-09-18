@@ -1,0 +1,69 @@
+<section id="meteoPanel" class="module">
+  <style>
+    #meteoPanel {
+      background: rgba(0,0,0,0.6);
+      border-radius: 12px;
+      padding: 1em;
+      margin: 1em;
+      box-shadow: 0 0 12px #ff66cc;
+      font-family: monospace;
+    }
+  </style>
+
+  <h3>🌡️ Météo simulée</h3>
+  <div>Température : <span id="temp">--</span> °C (<span id="tempFiab">--</span>%)</div>
+  <div>Pression : <span id="pression">--</span> hPa (<span id="pressionFiab">--</span>%)</div>
+  <div>Humidité : <span id="humidite">--</span>% (<span id="humiditeFiab">--</span>%)</div>
+
+  <script>
+    function format(val, digits = 2) {
+      return val.toFixed(digits);
+    }
+
+    function corriger(valeurBrute, fiabilite) {
+      return fiabilite < 50 ? 0 : valeurBrute * (fiabilite / 100);
+    }
+
+    function fiabiliteTemp(temp, deltaT) {
+      return deltaT < 0.2 ? 100 : deltaT < 0.5 ? 85 : 60;
+    }
+
+    function fiabilitePression(p, deltaP) {
+      return deltaP < 1 ? 100 : deltaP < 3 ? 85 : 60;
+    }
+
+    function fiabiliteHumidite(h, deltaH) {
+      return deltaH < 2 ? 100 : deltaH < 5 ? 80 : 60;
+    }
+
+    let tempPrev = 22, pressionPrev = 1013, humiditePrev = 50;
+
+    function updateMeteo() {
+      const tempBrute = 21.5 + Math.random();
+      const pressionBrute = 1012 + Math.random() * 3;
+      const humiditeBrute = 48 + Math.random() * 4;
+
+      const tempFiab = fiabiliteTemp(tempBrute, Math.abs(tempBrute - tempPrev));
+      const pressionFiab = fiabilitePression(pressionBrute, Math.abs(pressionBrute - pressionPrev));
+      const humiditeFiab = fiabiliteHumidite(humiditeBrute, Math.abs(humiditeBrute - humiditePrev));
+
+      const tempCorr = corriger(tempBrute, tempFiab);
+      const pressionCorr = corriger(pressionBrute, pressionFiab);
+      const humiditeCorr = corriger(humiditeBrute, humiditeFiab);
+
+      document.getElementById('temp').textContent = format(tempCorr);
+      document.getElementById('tempFiab').textContent = tempFiab;
+      document.getElementById('pression').textContent = format(pressionCorr);
+      document.getElementById('pressionFiab').textContent = pressionFiab;
+      document.getElementById('humidite').textContent = format(humiditeCorr);
+      document.getElementById('humiditeFiab').textContent = humiditeFiab;
+
+      tempPrev = tempBrute;
+      pressionPrev = pressionBrute;
+      humiditePrev = humiditeBrute;
+    }
+
+    updateMeteo();
+    setInterval(updateMeteo, 3000);
+  </script>
+</section>
