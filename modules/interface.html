@@ -1,0 +1,52 @@
+<section id="interfacePanel" class="module">
+  <style>
+    #interfacePanel {
+      background: rgba(0,0,0,0.6);
+      border-radius: 12px;
+      padding: 1em;
+      margin: 1em;
+      box-shadow: 0 0 12px #66ffff;
+      font-family: monospace;
+    }
+    label { display: block; margin: 0.5em 0; }
+  </style>
+
+  <h3>🧭 Interface cockpit</h3>
+  <div id="parametres"></div>
+
+  <script>
+    function togglePanel(id, checkboxId) {
+      const visible = document.getElementById(checkboxId).checked;
+      const panel = document.getElementById(id);
+      if (panel) {
+        panel.classList.toggle('hidden', !visible);
+        localStorage.setItem(checkboxId, visible);
+      }
+    }
+
+    const modules = [
+      'vitesse',
+      'soleilLune',
+      'orbital',
+      'sphere',
+      'meteo',
+      'capteurs'
+    ];
+
+    modules.forEach(name => {
+      const id = `toggle${name}`;
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = id;
+      checkbox.checked = localStorage.getItem(id) !== 'false';
+      checkbox.addEventListener('change', () => togglePanel(`${name}Panel`, id));
+
+      const label = document.createElement('label');
+      label.appendChild(checkbox);
+      label.append(` ${name}`);
+      document.getElementById('parametres').appendChild(label);
+
+      togglePanel(`${name}Panel`, id);
+    });
+  </script>
+</section>
